@@ -1,13 +1,11 @@
 #ifndef CONNECTOR_MANAGER_RB_HPP
 #define CONNECTOR_MANAGER_RB_HPP
 
+#define RB_CMD_PORT 5000
+#define RB_DATA_PORT 5001
+
 #include <iostream>
 #include <memory>
-
-// socket
-#include <sys/socket.h>
-#include <arpa/inet.h>
-
 
 #include "connector/manager.hpp"
 #include "connector/protocol/rainbow.hpp"
@@ -19,24 +17,25 @@ namespace CONNECTOR
 class ManagerRB : public Manager
 {
 public:
-        ManagerRB();
-        ManagerRB(const std::string & ip, const int & port);
-        ~ManagerRB();
-        
+    ManagerRB(const std::string & ip);
+    
+    ~ManagerRB();
 
-        void run();
-        void runSocket();
-        void setDataType(const std::shared_ptr<RAINBOW::Data_RB> & data_rb);
+    //TODO: void ReciveData()
+    //TODO: void UpdateData()
+    //TODO: std::shared_ptr<RAINBOW::Data_RB> getData()
+
+    //TODO: void setData(const std::shared_ptr<RAINBOW::Data_RB> & data_rb)
+    //TODO: void sendCommand(const std::string & idx)
+    
+    void setDataType(const std::shared_ptr<RAINBOW::Data_RB> & data_rb);
 
 private:
-        int sock_data_, sock_command_;
-        std::shared_ptr<RAINBOW::Data_RB> data_rb_;
-        struct sockaddr_in server_data_;
-        
-        bool CreateSocket_();
+    int sock_data_, sock_command_;
+    std::shared_ptr<RAINBOW::Data_RB> data_rb_;
+    struct sockaddr_in server_data_;
+    
 
-
-        void signalHandler_(int signum);
 };     // manager
 }      // namespace CONNECTOR
 }      // namespace DDECK

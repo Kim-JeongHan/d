@@ -37,7 +37,6 @@ RUN pip3 install matplotlib transforms3d \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-rqt \
     ros-${ROS_DISTRO}-moveit-ros-move-group \
-    ros-${ROS_DISTRO}-moveit-ros-warehou \
     ros-${ROS_DISTRO}-moveit-planners-ompl \
     ros-${ROS_DISTRO}-ompl \
     ros-${ROS_DISTRO}-eigenpy \
@@ -47,8 +46,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-moveit-ros-robot-interaction \
     ros-${ROS_DISTRO}-moveit-ros-warehouse \
     ros-${ROS_DISTRO}-warehouse-ros \
-    ros-${ROS_DISTRO}-setup-assistant \
-    ros-${ROS_DISTRO}-moveit-simple-controller-manager
+    ros-${ROS_DISTRO}-moveit-fake-controller-manager \
+    ros-${ROS_DISTRO}-moveit-simple-controller-manager \
+    ros-noetic-moveit-ros-visualization
+    # ros-${ROS_DISTRO}-setup-assistant \
 
 # Create catkin workspace with external dependencies
 RUN mkdir -p /upstream_ws/src
@@ -88,9 +89,9 @@ FROM base AS overlay
 RUN mkdir -p /overlay_ws/src
 WORKDIR /overlay_ws
 COPY ./${REPO}/ ./src/${REPO}/
-RUN source /upstream_ws/devel/setup.bash \
-    && catkin_make -DCMAKE_BUILD_TYPE=Release \
-    && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -y 
+RUN source /upstream_ws/devel/setup.bash 
+    # && catkin_make -DCMAKE_BUILD_TYPE=Release \
+    # && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -y 
 
 # Copy the VSCode settings
 COPY ./.vscode /overlay_ws/.vscode

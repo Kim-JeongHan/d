@@ -2,94 +2,105 @@
 
 using namespace DDECK::CONNECTOR;
 
-ManagerRB::ManagerRB()
-: Manager()
+ManagerRB::ManagerRB(const std::string & ip)
+: Manager(ip)
 {
-        this->data_rb_ = std::make_shared<RAINBOW::Data_RB>();
+    this->data_rb_ = std::make_shared<RAINBOW::Data_RB>();
+
+    // Create command socket
+    this->createSocketdesc_("command");
+    this->createServerData_("command", ip_, RB_CMD_PORT);
+    this->createSocket("command");
+
+    // Create data socket
+    this->createSocketdesc_("data");
+    this->createServerData_("data", ip_, RB_DATA_PORT);
+    this->createSocket("data");
+
+
+
 }
 
-ManagerRB::ManagerRB(const std::string & ip,
-                     const int & port)
-: Manager(ip, port)
-{
-        this->data_rb_ = std::make_shared<RAINBOW::Data_RB>();
-}
+
 
 
 ManagerRB::~ManagerRB()
 {
 }
 
-void ManagerRB::run()
-{
-}
 
-void ManagerRB::runSocket()
-{
-        // If the socket is not created, create it.
-        if(sock_command_==0)
-        {
-                CreateSocket_();
-        }
-
-}
 
 void ManagerRB::setDataType(const std::shared_ptr<RAINBOW::Data_RB> & data_rb)
 {
-        data_rb_ = data_rb;
+    data_rb_ = data_rb;
 }
 
-bool ManagerRB::CreateSocket_(const int & port)
+
+
+
 {
-        /*
-        socket
-        PF_INET: IPv4 protocols(Protocol Family)
-        SOCK_DGRAM: UDP(User Datagram Protocol)
-        */
-        sock_data_ = socket(PF_INET, SOCK_DGRAM, 0);
-        if (sock_data_ < 0)
+    fd_set readfds, writefds;
+    struct timeval tv;
+    int error;
+    // Set non-blocking socket
+    int flag = fcntl(sock_desc, F_GETFL, 0);
+    fcntl(sock_desc, F_SETFL, flag | O_NONBLOCK);
+
+    int status = connect(sock_desc, (struct sockaddr *)&server_data, sizeof(server_data));
+    if (status < 0)
+    {
+        if (errno != EINPROGRESS)
         {
-                std::cout << "ERROR - rb_connector sock_data is not created." << std::endl;
-                return false;
+            std::cout << "ERROR - rb_connector socket connection failed." << std::endl;
+            return (-10);
         }
-        /*
-        s_addr : 32bit IPv4 address
-        PF_INET : IPv4 protocols(Protocol Family)
-        htons : host to network short
-        */
-        server_data_.sin_addr.s_addr = inet_addr(ip_.c_str());
-        server_data_.sin_family = PF_INET;
-        server_data_.sin_port = htons(port_);
+    }
 
-        int optval = 1;
-        setsockopt(sock_data_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-        setsockopt(sock_data_, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+    if(status == 0)
+    {
+        std::cout << "rb_connector socket connected." << std::endl;
+        goto done;
+    }
 
-        return true;
-}
-
-
-
-void ManagerRB::signalHandler_(int signum)
-{
-        switch (signum)
+    FD_ZERO(&readfds);
+    FD_SET(sock_desc, &writefds);
+    tv.tv_sec = nsec;
+    tv.tv_usec = 0;
+    
+    if(select(sock_desc + 1, &readfds, &writefds, NULL, nsec ? &tv : NULL) == 0)
+    {
+        close(sock_desc);
+        errno = ETIMEDOUT;
+        std::cout << "ERROR - rb_connector socket connection timeout." << std::endl;
+        return (-11);
+    }
+    if (FD_ISSET(sock_desc, &writefds) || FD_ISSET(sock_desc, &readfds))
+    {
+        socklen_t len = sizeof(error);
+        if (getsockopt(sock_desc, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
         {
-        case SIGINT:
-        case SIGQUIT:
-        case SIGABRT:
-        case SIGKILL:
-        case SIGHUP:
-                if (shutdown(sock_data_, SHUT_RDWR) == 0)
-                {
-                        std::cout << "SIGNAL - rb_connector sock_data is shutdown." << std::endl;
-                }
+            std::cout << "ERROR - rb_connector solaris getsockopt failed." << std::endl;
+            return (-12);
+        }
+    }
+    else
+    {
+        std::cout << "ERROR - rb_connector select error." << std::endl;
+        return (-13);
+    }
 
-                if (shutdown(sock_command_, SHUT_RDWR) == 0)
-                {
-                        std::cout << "SIGNAL - rb_connector sock_command is shutdown." << std::endl;
-                }
-                break;
-        default:
-                break;
-        }  
+done:
+    // Set blocking socket
+    fcntl(sock_desc, F_SETFL, flag);
+    if(error)
+    {
+        close(sock_desc);
+        errno = error;
+        std::cout << "ERROR - rb_connector socket connection failed." << std::endl;
+        return (-14);
+    }
+    return 0;
 }
+
+
+
