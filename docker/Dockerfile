@@ -21,6 +21,10 @@ RUN --mount=type=cache,target=/var/cache/apt,id=apt \
     ccache \
     cmake \
     lld \
+    libqt5multimedia5-plugins \
+    libqt5multimedia5 \
+    qml-module-qtmultimedia \
+    libomp-10-dev libomp-dev libomp5-10 \
     git libcanberra-gtk-module libcanberra-gtk3-module fuse3 libqt5svg5-dev \
     python3-pip python3-opencv python3-tk python3-pyqt5.qtwebengine \
     && rm -rf /var/lib/apt/lists/*
@@ -31,7 +35,20 @@ RUN pip3 install matplotlib transforms3d \
 
 # Update the package list and install ROS1 packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-${ROS_DISTRO}-rqt
+    ros-${ROS_DISTRO}-rqt \
+    ros-${ROS_DISTRO}-moveit-ros-move-group \
+    ros-${ROS_DISTRO}-moveit-ros-warehou \
+    ros-${ROS_DISTRO}-moveit-planners-ompl \
+    ros-${ROS_DISTRO}-ompl \
+    ros-${ROS_DISTRO}-eigenpy \
+    ros-${ROS_DISTRO}-moveit-ros-manipulation \
+    ros-${ROS_DISTRO}-moveit-ros-perception \
+    ros-${ROS_DISTRO}-moveit-ros-planning-interface \
+    ros-${ROS_DISTRO}-moveit-ros-robot-interaction \
+    ros-${ROS_DISTRO}-moveit-ros-warehouse \
+    ros-${ROS_DISTRO}-warehouse-ros \
+    ros-${ROS_DISTRO}-setup-assistant \
+    ros-${ROS_DISTRO}-moveit-simple-controller-manager
 
 # Create catkin workspace with external dependencies
 RUN mkdir -p /upstream_ws/src
